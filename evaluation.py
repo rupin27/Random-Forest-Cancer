@@ -1,7 +1,32 @@
-from utils import *
 from decisionTree import *
 from randomForest import *
+from evaluation import *
+import matplotlib.pyplot as plt
 import csv
+
+# Evaluation Metrics
+
+def accuracy(truePosi, trueNega, falsePosi, falseNega):
+	return (truePosi + trueNega) / (truePosi + trueNega + falseNega + falsePosi)
+
+def precision(truePosi, falsePosi):
+	if (truePosi + falsePosi) == 0:
+		return 0
+	return truePosi / (truePosi + falsePosi)
+
+def recall(truePosi, falseNega):
+	if (truePosi + falseNega) == 0:
+		return 0
+	return truePosi / (truePosi + falseNega)
+
+def fscore(truePosi, falsePosi, falseNega, beta = 1):
+    if not (truePosi or falsePosi or falseNega):
+        return 0
+    precision = truePosi / (truePosi + falsePosi)
+    recall = truePosi / (truePosi + falseNega)
+    fScore = (1 + beta ** 2) * (precision * recall) / (beta ** 2 * precision + recall)
+    return fScore
+#________________________________________________________________________________________________________________________________________________________________________
 
 def extractData(name:str, delimit:str, classN:str, categ:str):
     file = open("datasets/" + name, encoding = 'utf-8-sig')
@@ -16,26 +41,33 @@ def extractData(name:str, delimit:str, classN:str, categ:str):
     fileData = np.array(data[1:]).astype(float)
     return fileData, fileCateg
 
-def extractCmcData():
+def evalResults(results, corrResult, beta=1):
+    accList, preList, recList, f1List = [], [], [], []
+    for res in results:
+        truePosi = sum(p == a == corrResult for p, a in res)
+        trueNega = sum(p == a != corrResult for p, a in res)
+        falsePosi = sum(p == corrResult and a != corrResult for p, a in res)
+        falseNega = sum(p != corrResult and a == corrResult for p, a in res)
+        accList.append(accuracy(truePosi, trueNega, falsePosi, falseNega))
+        preList.append(precision(truePosi, falsePosi))
+        recList.append(recall(truePosi, falseNega))
+        f1List.append(fscore(truePosi, falsePosi, falseNega, beta))
+    return accList, preList, recList, f1List
 
-    def extractFile(name:str, delimit:str):
-        file = open("datasets/"+name, encoding='utf-8-sig')
-        reader = csv.reader(file, delimiter=delimit)
-        data = []
-        for row in reader:
-            data.append(row)
-        return data
-    
-    cmc = extractFile('cmc.data', ',')
-    cmcCateg = {"Wife's age":"numerical","Wife's education":"categorical",
-    "Husband's education":"categorical","Number of children ever born":"numerical",
-    "Wife's religion":"binary","Wife's now working?":"binary",
-    "Husband's occupation":"categorical","Standard-of-living index":"categorical",
-    "Media exposure":"binary","Contraceptive method used":"class"}
-    cmcData = np.array(cmc).astype(int)
-    return cmcData, cmcCateg
+def meanEval(results, corrResult, beta=1):
+    accuarcylists, precisionlists, recalllists, fscorelists = evalResults(results, corrResult, beta)
+    return sum(accuarcylists)/len(accuarcylists), sum(precisionlists)/len(precisionlists), sum(recalllists)/len(recalllists), sum(fscorelists)/len(fscorelists)
+
+def printMetrics(acc, pre, rec, fsc, beta, nvalue, title):
+    acc, pre, rec, fsc = round(acc, 3), round(pre, 3), round(rec, 3), round(fsc, 3)
+    print(f"{nvalue} Trees Random Forest of {title}:")
+    print(f"Accuracy: {acc}")
+    print(f"Precision: {pre}")
+    print(f"Recall: {rec}")
+    print(f"F-Score(beta={beta}): {fsc}")
 
 nParams = [1, 5, 10, 20, 30, 40, 50] 
+#________________________________________________________________________________________________________________________________________________________________________
 
 def getResultsWine(data, dataCateg, k, maxDepth, minSize, minGain, impurity, bootstrapRatio, name, nImpurity):
     dataAccuracy, dataPrecision, dataRecall, dataF1 = [], [], [], []
@@ -94,32 +126,4 @@ def plotter(dataAccuracy, dataPrecision, dataRecall, dataF1, title, xlabel, ylab
     plt.legend()
     plt.show()
 
-
-if __name__=="__main__":
-    cmcData,cmcCateg = extractCmcData()
-    lists,acc = kFoldCrossValid(cmcData, cmcCateg, k=10, ntree=20, maxdepth=10, minimalsize=10, minimalgain=0.01, algortype='id3', bootstrapratio = 0.1)
-    print(acc)
-    print(lists)
-
-
-# # House Votes Dataset
-# houseAccuracy, housePrecision, houseRecall, houseF1 = getResults(housedata, housecategory, nParams, 10, 10, 5, 0.01, 'id3', 0.1, "House")
-
-# def plotter2(dataAccuracy, dataPrecision, dataRecall, dataF1):
-#     plt.plot(nParams, dataAccuracy, color='blue', label='Accuracy')
-#     plt.plot(nParams, dataPrecision, color='green', label='Precision')
-#     plt.plot(nParams, dataRecall, color='red', label='Recall')
-#     plt.plot(nParams, dataF1, color='purple', label='F-1 score')
-
-#     # Set the title and labels for the plot
-#     plt.title('HouseVote with Gini index')
-#     plt.xlabel('Number of trees in the forest')
-#     plt.ylabel('Metric score')
-
-#     # Add a legend to show which color represents which metric
-#     plt.legend()
-
-#     # Display the plot
-#     plt.show()
-
-# plotter2(houseAccuracy, housePrecision, houseRecall, houseF1)
+#________________________________________________________________________________________________________________________________________________________________________

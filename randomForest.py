@@ -1,4 +1,3 @@
-from utils import *
 from decisionTree import *
 
 # random Forest algorithm to plant a forest of n trees
