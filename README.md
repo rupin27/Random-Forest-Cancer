@@ -77,4 +77,4 @@ evaluationCalc.py
 - The script will output the performance metrics and evaluation results for the random forest.
 - Study the impact of the number of trees (ntree hyper-parameter) on the algorithm's performance.
 - Experiment with different stopping criteria and hyper-parameters to optimize the performance.
-Note: It is recommended to explore the code files, such as decision_tree.py and utils.py, to gain a deeper understanding of the implementation details.
+Note: It is recommended to explore the code files, such as decisionTree.py and randomForest.py, to gain a deeper understanding of the implementation details.
